@@ -147,3 +147,11 @@ Saves, settings, mods, title images and captures live in your user data folder:
 | `tools/check_decoder.py`, `tools/difftest.py` | Check the decoder against `llvm-objdump`, and emitted C against real ARM under `qemu-arm` |
 | `runtime/` | The native runtime the generated code links against: kernel and HLE services, PICA200 renderer, DSP audio, launcher, mods, local wireless (`runtime/src/net`) |
 | `docs/` | Architecture, plan and per-phase notes |
+
+## License
+
+Clockwork's own code (the recompiler, runtime and tools) is released under the [MIT License](LICENSE).
+
+This licence covers only the code in this repository. It grants no rights to the Yo-kai Watch games or their data, which are not included here and must come from your own legally owned copy.
+
+Bundled third-party code keeps its own licence: [Dear ImGui](runtime/third_party/imgui/LICENSE.txt) (MIT).
