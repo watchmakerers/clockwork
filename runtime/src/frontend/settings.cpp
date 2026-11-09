@@ -116,6 +116,8 @@ void Settings::load() {
         else if (k == "show_launcher") show_launcher = b;
         else if (k == "launcher_fullscreen") launcher_fullscreen = b;
         else if (k == "menu_music") menu_music = b;
+        else if (k == "check_updates") check_updates = b;
+        else if (k == "update_channel") update_channel = v;
         else if (k == "single_screen") single_screen = b;
         else if (k == "swap_screens") swap_screens = b;
         else if (k == "picture_in_picture") picture_in_picture = b;
@@ -167,6 +169,8 @@ void Settings::save() const {
     f << "show_launcher=" << show_launcher << "\n"
       << "launcher_fullscreen=" << launcher_fullscreen << "\n"
       << "menu_music=" << menu_music << "\n"
+      << "check_updates=" << check_updates << "\n"
+      << "update_channel=" << update_channel << "\n"
       << "single_screen=" << single_screen << "\n"
       << "swap_screens=" << swap_screens << "\n"
       << "picture_in_picture=" << picture_in_picture << "\n"

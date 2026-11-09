@@ -69,12 +69,15 @@ jobs:
 
       - name: Build
         run: |
+          # the build's name, which the launcher's updater compares with the newest release
+          if [ "$GITHUB_REF_TYPE" = tag ]; then BUILD=$GITHUB_REF_NAME; else BUILD=nightly-$GITHUB_SHA; fi
+          CMAKE_ARGS="$CMAKE_ARGS -DCLOCKWORK_BUILD=$BUILD"
           if [ "$RUNNER_OS" = Windows ]; then
             cmake -B build $CMAKE_ARGS
             cmake --build build --config Release --target clockwork clockwork-relay
             echo "BIN=build/Release" >> "$GITHUB_ENV"
           else
-            cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+            cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release $CMAKE_ARGS
             cmake --build build --target clockwork clockwork-relay
             echo "BIN=build" >> "$GITHUB_ENV"
           fi

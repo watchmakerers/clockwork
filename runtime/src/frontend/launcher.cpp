@@ -14,6 +14,7 @@
 #include "platform.h"
 #include "saves.h"
 #include "settings.h"
+#include "updater.h"
 #include "video/upscale.h"
 
 #include <SDL3/SDL.h>
@@ -372,6 +373,67 @@ void section(const char *title) {
     dl->AddLine({p.x + w + h * 0.2f, p.y + h / 2}, {x1, p.y + h / 2}, col(alpha(EDGE, 0.55f)), 2);
     ImGui::Dummy({w, h});
     ImGui::Spacing();
+}
+
+// what the updater is doing, and its buttons; true when "Restart" is pressed
+bool update_controls(const updater::Status &u) {
+    using updater::State;
+    switch (u.state) {
+    case State::AVAILABLE:
+        if (ImGui::Button(("Update to " + u.latest).c_str())) updater::install();
+        break;
+    case State::DOWNLOADING:
+        ImGui::ProgressBar(u.progress, ImVec2(ImGui::GetFontSize() * 18, 0), "Downloading the update...");
+        break;
+    case State::READY:
+        ImGui::TextColored({0.5f, 1, 0.6f, 1}, "Updated to %s.", u.latest.c_str());
+        ImGui::SameLine();
+        return ImGui::Button("Restart Clockwork");
+    case State::FAILED: ImGui::TextColored({1, 0.5f, 0.3f, 1}, "%s", u.error.c_str()); break;
+    default: break;
+    }
+    return false;
+}
+
+// at the top of the Library: an update to install, or installed; true to restart
+bool update_banner() {
+    updater::Status u = updater::status();
+    if (u.state != updater::State::AVAILABLE && u.state != updater::State::DOWNLOADING &&
+        u.state != updater::State::READY && !u.install_failed)
+        return false;
+    if (u.state == updater::State::AVAILABLE) {
+        ImGui::TextColored({1, 0.85f, 0.3f, 1}, "A newer Clockwork is out: %s (you have %s).", u.latest.c_str(),
+                           updater::build_label().c_str());
+        ImGui::SameLine();
+    }
+    return update_controls(u);
+}
+
+// Settings > Updates; true to restart
+bool update_settings(Settings &s, bool nightly) {
+    section("Updates");
+    ImGui::Text("This is Clockwork %s.", updater::build_label().c_str());
+    if (!updater::enabled()) {
+        ImGui::TextDisabled("Built from source, so it doesn't update itself: pull and build again.");
+        return false;
+    }
+    ImGui::Checkbox("Look for updates when the launcher opens", &s.check_updates);
+    int channel = nightly ? 1 : 0;
+    ImGui::RadioButton("Nightly: every fix as soon as it's made (recommended)", &channel, 1);
+    ImGui::RadioButton("Versions only: fewer, bigger updates", &channel, 0);
+    if (channel != (nightly ? 1 : 0)) {
+        s.update_channel = channel ? "nightly" : "releases";
+        updater::check(channel == 1);
+    }
+    updater::Status u = updater::status();
+    if (u.state == updater::State::CHECKING) ImGui::TextDisabled("Looking for updates...");
+    if (u.state == updater::State::UP_TO_DATE) ImGui::TextDisabled("Up to date.");
+    if (u.state != updater::State::CHECKING && u.state != updater::State::DOWNLOADING &&
+        ImGui::Button("Look for updates now"))
+        updater::check(nightly);
+    bool restart = update_controls(u);
+    ImGui::TextDisabled("Updates replace the files in Clockwork's folder; saves, settings and built games stay.");
+    return restart;
 }
 
 // the logo: a clock face inside a gear, hands at ten past ten
@@ -1006,6 +1068,7 @@ bool run_launcher(SDL_Window *window, SDL_Renderer *renderer, const std::string 
     std::vector<SDL_Gamepad *> pads;
     Capture capture;
     bool play = false, quit = false;
+    bool restart = false; // quit to start the updated launcher
     static const char *FILTERS[] = {"Sharp pixels (recommended)", "Smooth", "Nearest neighbor"};
     static const SDL_DialogFileFilter DUMP_TYPES[] = {{"3DS game dumps and updates", "3ds;cci;cxi;cia;ncch"}, {"All files", "*"}};
 
@@ -1016,10 +1079,10 @@ bool run_launcher(SDL_Window *window, SDL_Renderer *renderer, const std::string 
     uint64_t frame_count = 0;
     // top tabs, and the Settings tab's own
     static const char *TABS[] = {"Library", "Mods", "Rooms", "Settings"};
-    static const char *SETTINGS_TABS[] = {"Display", "Controls", "Audio"};
+    static const char *SETTINGS_TABS[] = {"Display", "Controls", "Audio", "Updates"};
     // screenshot pages: each top tab, and each settings tab
-    static const char *SHOT_NAMES[] = {"Library", "Mods", "Rooms", "Display", "Controls", "Audio"};
-    static const int SHOT_TOP[] = {0, 1, 2, 3, 3, 3}, SHOT_SUB[] = {-1, -1, -1, 0, 1, 2};
+    static const char *SHOT_NAMES[] = {"Library", "Mods", "Rooms", "Display", "Controls", "Audio", "Updates"};
+    static const int SHOT_TOP[] = {0, 1, 2, 3, 3, 3, 3}, SHOT_SUB[] = {-1, -1, -1, 0, 1, 2, 3};
     auto mods_state = std::make_shared<ModsState>();
     std::vector<InstalledMod> installed;
     auto rooms_state = std::make_shared<RoomsState>();
@@ -1044,6 +1107,10 @@ bool run_launcher(SDL_Window *window, SDL_Renderer *renderer, const std::string 
                     playable[i] = true;
     };
     find_playable();
+    // updates (updater.h): what the last one left behind goes, and a newer build is looked for
+    auto nightly_updates = [&] { return s.update_channel.empty() ? updater::built_nightly() : s.update_channel == "nightly"; };
+    updater::cleanup();
+    if (s.check_updates && !shot) updater::check(nightly_updates());
     // games built from their dumps here (autobuild.h): the dumps found decide what to build, one
     // executable at a time; each is tried once a session (a failure stays on screen until retried)
     auto build_job = std::make_shared<BuildJob>();
@@ -1275,6 +1342,7 @@ bool run_launcher(SDL_Window *window, SDL_Renderer *renderer, const std::string 
             auto tab = [&](int i) { return top_tab == i; };
             auto sub_tab = [&](int i) { return settings_tab == i; };
             if (tab(0)) {
+                if (update_banner()) restart = quit = true;
                 section("Games");
                 { // a grid of tiles, as many across as fit
                     float avail = ImGui::GetContentRegionAvail().x, gap = style.ItemSpacing.x * 1.5f;
@@ -1419,7 +1487,7 @@ bool run_launcher(SDL_Window *window, SDL_Renderer *renderer, const std::string 
             if (tab(3)) {
             { // the settings' own pages
                 float sbh = ImGui::GetFrameHeight() * 1.2f, sbw = ImGui::GetFontSize() * 6.4f;
-                for (int i = 0; i < 3; i++) {
+                for (int i = 0; i < int(std::size(SETTINGS_TABS)); i++) {
                     if (i) ImGui::SameLine(0, style.ItemSpacing.x * 0.5f);
                     if (bar_button(SETTINGS_TABS[i], {sbw, sbh}, settings_tab == i ? CYAN_BAR : NAVY_BAR)) settings_tab = i;
                 }
@@ -1536,6 +1604,7 @@ bool run_launcher(SDL_Window *window, SDL_Renderer *renderer, const std::string 
                 if (ImGui::Combo("##latency", &latency, LATENCY, 3)) s.audio_latency = latency;
                 ImGui::TextDisabled("Lower answers sooner; higher crackles less when the PC is busy.");
             }
+            if (sub_tab(3) && update_settings(s, nightly_updates())) restart = quit = true;
             }
             }
         }
@@ -1577,6 +1646,7 @@ bool run_launcher(SDL_Window *window, SDL_Renderer *renderer, const std::string 
     ImGui_ImplSDL3_Shutdown();
     ImGui::DestroyContext();
     for (SDL_Gamepad *g : pads) SDL_CloseGamepad(g);
+    if (restart) updater::restart();
     return play;
 }
 

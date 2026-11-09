@@ -84,7 +84,8 @@ module in the data folder, with this PC's C compiler (Visual Studio's Build Tool
 command line tools on macOS, gcc or clang on Linux); `clockwork` then plays it. Pushing a `v*` tag
 makes one (`.github/workflows/release.yml`, `tools/package.sh`). The
 [nightly](https://github.com/watchmakerers/clockwork/releases/tag/nightly) pre-release is rebuilt
-after every change to `master`, so it has fixes before the next version does.
+after every change to `master`, so it has fixes before the next version does. A packaged Clockwork
+updates itself: the launcher offers each new nightly, or each new version (Settings > Updates).
 
 From source: build once (`cmake -B build -G Ninja && cmake --build build`), which makes
 `clockwork` and the relay, plus any game whose code is generated. After that, **the launcher builds

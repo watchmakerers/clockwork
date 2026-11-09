@@ -59,6 +59,12 @@ if(WIN32)
     add_compile_definitions(NOMINMAX WIN32_LEAN_AND_MEAN) # windows.h's min/max macros break std::min
 endif()
 
+# what the updater compares with GitHub's releases: v<version> or nightly-<commit>, set by the release
+# workflow. Empty (a build from source) never updates itself
+set(CLOCKWORK_BUILD "" CACHE STRING "Build name for the updater (empty: built from source)")
+set_source_files_properties(runtime/src/frontend/updater.cpp PROPERTIES
+    COMPILE_DEFINITIONS "CLOCKWORK_BUILD=\"${CLOCKWORK_BUILD}\"")
+
 add_library(runtime OBJECT
     runtime/src/arm_ops.c
     runtime/src/audio/bcstm.cpp
@@ -75,6 +81,7 @@ add_library(runtime OBJECT
     runtime/src/frontend/saves.cpp
     runtime/src/frontend/sdl.cpp
     runtime/src/frontend/settings.cpp
+    runtime/src/frontend/updater.cpp
     runtime/src/hle/apt.cpp
     runtime/src/hle/cecd.cpp
     runtime/src/hle/cfg.cpp

@@ -31,6 +31,8 @@ struct Settings {
     bool show_launcher = true;
     bool launcher_fullscreen = true; // the launcher fills the screen (F11 toggles); the game has its own
     bool menu_music = true;          // the launcher plays Blasters' menu theme (menu_music.h)
+    bool check_updates = true;       // the launcher looks for a newer build (updater.h)
+    std::string update_channel;      // "nightly" or "releases"; empty: the one this build came from
 
     // display
     bool single_screen = false, swap_screens = false, picture_in_picture = true;
