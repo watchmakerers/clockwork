@@ -1033,12 +1033,15 @@ bool run_launcher(SDL_Window *window, SDL_Renderer *renderer, const std::string 
             SDL_free(ids);
         }
     }
-    // a game is playable when the executable for one of its dumps is built
+    // a game is playable when the executable for one of its dumps is built: the one with its
+    // update's code (<binary>_upd, what gets built when an update is found) or without
     bool playable[GAME_COUNT] = {};
     auto find_playable = [&] {
         for (int i = 0; i < GAME_COUNT; i++)
             for (const KnownDump &d : KNOWN_DUMPS)
-                if (std::strcmp(d.game, GAMES[i].id) == 0 && binary_available(d.binary)) playable[i] = true;
+                if (std::strcmp(d.game, GAMES[i].id) == 0 &&
+                    (binary_available(code_binary(d, false).c_str()) || binary_available(code_binary(d, true).c_str())))
+                    playable[i] = true;
     };
     find_playable();
     // games built from their dumps here (autobuild.h): the dumps found decide what to build, one
