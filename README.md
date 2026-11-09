@@ -82,7 +82,9 @@ Needs Rust, CMake 3.24+, a C/C++ compiler (Clang, GCC or MSVC), SDL3, libcurl an
 game), the tools, and what a game's code is compiled with. Add a dump and it builds that game as a
 module in the data folder, with this PC's C compiler (Visual Studio's Build Tools on Windows, Xcode's
 command line tools on macOS, gcc or clang on Linux); `clockwork` then plays it. Pushing a `v*` tag
-makes one (`.github/workflows/release.yml`, `tools/package.sh`).
+makes one (`.github/workflows/release.yml`, `tools/package.sh`). The
+[nightly](https://github.com/watchmakerers/clockwork/releases/tag/nightly) pre-release is rebuilt
+after every change to `master`, so it has fixes before the next version does.
 
 From source: build once (`cmake -B build -G Ninja && cmake --build build`), which makes
 `clockwork` and the relay, plus any game whose code is generated. After that, **the launcher builds
