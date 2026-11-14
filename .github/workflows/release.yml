@@ -111,13 +111,18 @@ jobs:
               "The latest build of master (${GITHUB_SHA::7}), rebuilt after every change: it has the newest fixes, and may have new bugs. No game is included: the launcher builds each game from a dump of your own cartridge, on your PC, which needs a C compiler (see README.txt in the package)."
             exit 0
           fi
-          # an annotated tag's message names the release (git tag -a v1.0.0 -m "Welcome to Youmakai Network");
-          # a plain tag is just "Clockwork <tag>"
+          # An annotated tag's message is the release's title (first line) and patch notes (the rest):
+          #   git tag -a v1.0.0 -F notes.txt
+          # A plain tag is just "Clockwork <tag>" with the standard text.
+          ABOUT="Clockwork for Windows, Linux and macOS (Apple Silicon). No game is included: the launcher builds each game from a dump of your own cartridge, on your PC, which needs a C compiler (see README.txt in the package)."
           TITLE="Clockwork $TAG"
+          NOTES="$ABOUT"
           OBJ=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" --jq 'select(.object.type == "tag") | .object.sha' || true)
           if [ -n "$OBJ" ]; then
-            NAME=$(gh api "repos/$GITHUB_REPOSITORY/git/tags/$OBJ" --jq '.message' | head -n 1)
+            gh api "repos/$GITHUB_REPOSITORY/git/tags/$OBJ" --jq '.message' > message.txt
+            NAME=$(head -n 1 message.txt)
             [ -n "$NAME" ] && TITLE="$NAME"
+            BODY=$(tail -n +2 message.txt | grep -v '^Co-Authored-By:' | sed '/./,$!d')
+            [ -n "$BODY" ] && NOTES="$BODY"$'\n\n'"$ABOUT"
           fi
-          gh release create "$TAG" clockwork-* --repo "$GITHUB_REPOSITORY" --title "$TITLE" --notes \
-            "Clockwork for Windows, Linux and macOS (Apple Silicon). No game is included: the launcher builds each game from a dump of your own cartridge, on your PC, which needs a C compiler (see README.txt in the package)."
+          gh release create "$TAG" clockwork-* --repo "$GITHUB_REPOSITORY" --title "$TITLE" --notes "$NOTES"
