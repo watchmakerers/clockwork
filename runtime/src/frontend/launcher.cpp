@@ -1062,8 +1062,8 @@ void online_tab(const std::shared_ptr<OnlineState> &st, Settings &s) {
             s.online_server_key.erase(s.online_server_key.find_last_not_of(" \t\r\n") + 1);
         }
     }
-    note("A Youmakai Network server (ykw3-stack): the games it hosts play online with everyone on it, 3DS consoles "
-         "and emulators included. Its owner gives you the address, its server key and a register key. Clockwork "
+    note("Yo-kai Watch 3 for now: online with everyone on a Youmakai Network server (ykw3-stack), 3DS consoles "
+         "and emulators included. Other games stay offline. Its owner gives you the address, its server key and a register key. Clockwork "
          "only talks to the server with that key, so nobody can pose as it. A server with a certificate from a "
          "real authority needs no key.");
 
@@ -1113,8 +1113,7 @@ void online_tab(const std::shared_ptr<OnlineState> &st, Settings &s) {
             }).detach();
         }
         ImGui::EndDisabled();
-        note("Clockwork has no 3DS console behind it, so it gets its own account on the server. It plays the games "
-             "that server hosts itself (Yo-kai Watch 3, Blasters 2), not ones it passes on to Pretendo.");
+        note("Clockwork has no 3DS console behind it, so it gets its own account on the server.");
     }
     if (!st->message.empty()) {
         if (st->failed) ImGui::TextColored(WARN, "%s", st->message.c_str());
