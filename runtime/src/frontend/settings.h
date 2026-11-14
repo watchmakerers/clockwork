@@ -64,7 +64,7 @@ struct Settings {
 
     // Nintendo Network play (the Online tab; see net/online.h)
     bool online = false;            // games go online through the server below
-    std::string online_server;      // its address, "https://host[:port]"
+    std::string online_server;      // its address, "https://host[:port]"; empty: Youmakai Network (settings.cpp)
     std::string online_server_key;  // its public key, "sha256//..." (a self-signed server); empty: needs a CA-signed certificate
 
     // European releases: the language the console is set to (3DS codes: 1 English, 2 French,

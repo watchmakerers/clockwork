@@ -1,6 +1,7 @@
 #include "settings.h"
 
 #include "frontend.h"
+#include "net/online.h"
 #include "platform.h"
 
 #include <SDL3/SDL.h>
@@ -153,6 +154,8 @@ void Settings::load() {
                 if (k == std::string("pad_") + CONTROLS[i].id) pad[i] = pad_from_id(v);
             }
     }
+    // no server chosen (a new player, or one from before there was a default): the official one
+    if (online_server.empty()) online_server = online::OFFICIAL_SERVER, online_server_key = online::OFFICIAL_SERVER_KEY;
 }
 
 void Settings::save() const {

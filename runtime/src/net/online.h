@@ -13,6 +13,16 @@
 
 namespace online {
 
+// Youmakai Network, the official server: what a player gets without typing anything. Its register key
+// is public on purpose: on the server it only makes new Clockwork accounts (CLOCKWORK_KEY, capped per
+// IP and per day), apart from the private key that registers consoles.
+inline constexpr const char *OFFICIAL_SERVER = "https://youmakai.duckdns.org:8443";
+inline constexpr const char *OFFICIAL_SERVER_KEY = "sha256//zq3ZRGrDOIKNxt5kP24HeHPoXN2ke0ukT0kvKH7XEt8=";
+inline constexpr const char *OFFICIAL_REGISTER_KEY = "92caa45b92231bb6cbeb9c1f0b9cb1c3";
+
+// the settings name the official server (address and key)
+bool is_official(const std::string &server, const std::string &server_key);
+
 struct Account {
     std::string server;     // the server it belongs to, "https://host[:port]"
     std::string server_key; // that server's key when it was made ("sha256//..."; empty: CA-verified)

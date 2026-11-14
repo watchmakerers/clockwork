@@ -220,6 +220,10 @@ uint64_t nasc_time(const std::string &s) {
 
 } // namespace
 
+bool is_official(const std::string &server, const std::string &server_key) {
+    return trim_slash(server) == OFFICIAL_SERVER && server_key == OFFICIAL_SERVER_KEY;
+}
+
 uint64_t friend_code_of(uint32_t pid) {
     uint8_t le[4] = {uint8_t(pid), uint8_t(pid >> 8), uint8_t(pid >> 16), uint8_t(pid >> 24)}, h[20];
     sha1(le, 4, h);

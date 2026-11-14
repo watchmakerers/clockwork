@@ -1062,10 +1062,17 @@ void online_tab(const std::shared_ptr<OnlineState> &st, Settings &s) {
             s.online_server_key.erase(s.online_server_key.find_last_not_of(" \t\r\n") + 1);
         }
     }
-    note("Yo-kai Watch 3 for now: online with everyone on a Youmakai Network server (ykw3-stack), 3DS consoles "
-         "and emulators included. Other games stay offline. Its owner gives you the address, its server key and a register key. Clockwork "
-         "only talks to the server with that key, so nobody can pose as it. A server with a certificate from a "
-         "real authority needs no key.");
+    bool official = online::is_official(s.online_server, s.online_server_key);
+    if (official) {
+        ImGui::TextColored(BLUE, "Youmakai Network, the official server");
+    } else if (ImGui::Button("Use Youmakai Network")) {
+        s.online_server = online::OFFICIAL_SERVER, s.online_server_key = online::OFFICIAL_SERVER_KEY;
+        official = true;
+    }
+    note("Yo-kai Watch 3 for now: online with everyone on the server, 3DS consoles and emulators included. Other "
+         "games stay offline. Clockwork only talks to the server with that key, so nobody can pose as it. For another "
+         "server (a self-hosted ykw3-stack), its owner gives you the address, its server key and a register key; a "
+         "server with a certificate from a real authority needs no key.");
 
     std::lock_guard lk(st->lock);
     section("Your account");
@@ -1090,17 +1097,20 @@ void online_tab(const std::shared_ptr<OnlineState> &st, Settings &s) {
                                      "the key, check the new one with them before using it.");
         else if (a.valid()) ImGui::TextColored(WARN, "Your account is on %s, not this server.", a.server.c_str());
         else ImGui::TextDisabled("No account yet.");
-        char buf[128];
-        std::snprintf(buf, sizeof buf, "%s", key.c_str());
-        ImGui::SetNextItemWidth(field);
-        if (ImGui::InputTextWithHint("Register key", "from whoever runs the server", buf, sizeof buf,
-                                     ImGuiInputTextFlags_Password))
-            key = buf;
-        ImGui::BeginDisabled(st->registering || key.empty() || s.online_server.empty());
+        if (!official) { // the official server's key is built in
+            char buf[128];
+            std::snprintf(buf, sizeof buf, "%s", key.c_str());
+            ImGui::SetNextItemWidth(field);
+            if (ImGui::InputTextWithHint("Register key", "from whoever runs the server", buf, sizeof buf,
+                                         ImGuiInputTextFlags_Password))
+                key = buf;
+        }
+        ImGui::BeginDisabled(st->registering || (!official && key.empty()) || s.online_server.empty());
         if (ImGui::Button(st->registering ? "Registering..." : "Register")) {
             st->registering = true;
             st->message.clear();
-            std::string server = s.online_server, server_key = s.online_server_key, k = key;
+            std::string server = s.online_server, server_key = s.online_server_key,
+                        k = official ? online::OFFICIAL_REGISTER_KEY : key;
             std::thread([st, server, server_key, k] {
                 online::Account made;
                 std::string error;
