@@ -142,6 +142,9 @@ void Settings::load() {
         else if (k == "player_name") player_name = v;
         else if (k == "room") room = v;
         else if (k == "room_password") room_password = v;
+        else if (k == "online") online = b;
+        else if (k == "online_server") online_server = v;
+        else if (k == "online_server_key") online_server_key = v;
         else if (k == "language") language = std::clamp(std::atoi(v.c_str()), 1, 5);
         else if (k == "audio_latency") audio_latency = std::clamp(std::atoi(v.c_str()), 0, 2);
         else
@@ -196,7 +199,10 @@ void Settings::save() const {
       << "relay=" << relay << "\n"
       << "player_name=" << player_name << "\n"
       << "room=" << room << "\n"
-      << "room_password=" << room_password << "\n";
+      << "room_password=" << room_password << "\n"
+      << "online=" << online << "\n"
+      << "online_server=" << online_server << "\n"
+      << "online_server_key=" << online_server_key << "\n";
     for (auto &[key, layout] : layouts) f << "layout." << key << "=" << layout << "\n";
     for (int i = 0; i < CONTROL_COUNT; i++) {
         f << "key_" << CONTROLS[i].id << "=" << (keys[i] ? SDL_GetScancodeName(SDL_Scancode(keys[i])) : "") << "\n";
