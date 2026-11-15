@@ -94,7 +94,6 @@ add_library(runtime OBJECT
     runtime/src/hle/offline.cpp
     runtime/src/hle/ptm.cpp
     runtime/src/hle/service.cpp
-    runtime/src/hle/soc.cpp
     runtime/src/hle/srv.cpp
     runtime/src/hle/stubs.cpp
     runtime/src/hle/uds.cpp
@@ -107,7 +106,6 @@ add_library(runtime OBJECT
     runtime/src/memory.cpp
     runtime/src/mods.cpp
     runtime/src/net/air.cpp
-    runtime/src/net/online.cpp
     runtime/src/net/relay.cpp
     runtime/src/platform.cpp
     runtime/src/video/gpu/gpu.cpp

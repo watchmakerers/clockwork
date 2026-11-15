@@ -1,14 +1,13 @@
 // Services for things this PC doesn't have, answered so that a menu reaching them reports the
 // feature unavailable instead of the game stopping:
-// - ac:u (internet connection): connected while online play is on (net/online.h), offline otherwise
-// - HTTP, the camera (QR codes), NFC (medals, amiibo), the Circle Pad Pro and head
+// - ac:u (internet connection): always offline
+// - sockets, HTTP, the camera (QR codes), NFC (medals, amiibo), the Circle Pad Pro and head
 //   tracking: Initialize succeeds, everything else fails
 // Each call is logged, to see when a game reaches one.
 #include "service.h"
 
 #include "kernel/kernel.h"
 #include "log.h"
-#include "net/online.h"
 
 #include <algorithm>
 #include <string>
@@ -57,31 +56,17 @@ struct Ac : Service {
             req.push_static_buffer(r, 0, config, sizeof config);
             break;
         }
-        case 0x0004: // ConnectAsync(process, event, config): done at once; the event reports it
+        case 0x0004: // ConnectAsync(process, event, config): it fails, which the game's event reports
             if (auto e = kernel::get<kernel::Event>(passed_handle(req))) e->signal();
             req.reply(1, 0);
             break;
-        case 0x0005: // GetConnectResult
-        case 0x0007: // GetCloseResult
-            req.reply(1, 0, online::enabled() || req.id() == 0x0007 ? kernel::RESULT_OK : ERR_UNAVAILABLE);
+        case 0x0005: // GetConnectResult -> failed
+            req.reply(1, 0, ERR_UNAVAILABLE);
             break;
-        case 0x0008: // CloseAsync(process, event)
-            if (auto e = kernel::get<kernel::Event>(passed_handle(req))) e->signal();
-            req.reply(1, 0);
-            break;
-        case 0x000C: { // GetWifiStatus -> 1 (connected to an access point) or 0
-            auto r = req.reply(2, 0);
-            r.push(online::enabled() ? 1 : 0);
-            break;
-        }
-        case 0x000D: { // GetInfraPriority -> 0 (the internet, not a local network)
+        case 0x000C:   // GetWifiStatus -> not connected
+        case 0x003E: { // IsConnected -> no
             auto r = req.reply(2, 0);
             r.push(0);
-            break;
-        }
-        case 0x003E: { // IsConnected
-            auto r = req.reply(2, 0);
-            r.push(online::enabled() ? 1 : 0);
             break;
         }
         case 0x0040: // SetClientVersion
@@ -107,7 +92,7 @@ struct Unavailable : Service {
 
 void register_offline() {
     register_service({"ac:u", "ac:i"}, std::make_shared<Ac>());
-    for (const char *name : {"http:C", "cam:u", "nfc:u", "ir:USER", "hid:QTM", "gsp::Lcd", "boss:M"})
+    for (const char *name : {"soc:U", "http:C", "cam:u", "nfc:u", "ir:USER", "hid:QTM", "gsp::Lcd", "boss:M"})
         register_service({name}, std::make_shared<Unavailable>(name));
 }
 
