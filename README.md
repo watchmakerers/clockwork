@@ -9,9 +9,6 @@ is not an emulator: no interpreter, no JIT, no 3DS firmware. See
 This repository holds only tools and source code. It does not and will not contain any game code
 or assets: you play from decrypted dumps of cartridges you own.
 
-**Community:** the official Discord server is at [discord.gg/caM5wVXfH](https://discord.gg/caM5wVXfH):
-help, finding players for online and local play, and news.
-
 ## Games
 
 Every game is its own executable, built from one shared runtime when that game's recompiled code
