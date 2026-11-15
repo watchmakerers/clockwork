@@ -28,8 +28,7 @@ Account load_account();
 void save_account(const Account &a);
 void forget_account();
 
-// online play is on (settings), the running game supports it (Yo-kai Watch 3 for now) and there's
-// an account for the chosen server
+// online play is on (settings) and there's an account for the chosen server
 bool enabled();
 const Account &account(); // the one games use (loaded once per process)
 

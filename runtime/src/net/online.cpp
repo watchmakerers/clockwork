@@ -1,7 +1,5 @@
 #include "online.h"
 
-#include "dump.h"
-#include "frontend/games.h"
 #include "frontend/json.h"
 #include "frontend/settings.h"
 #include "log.h"
@@ -267,16 +265,7 @@ const Account &account() {
     return a;
 }
 
-// the games online play is ready for: Yo-kai Watch 3 for now. Others stay offline as before, even
-// with online play on (their servers aren't on Youmakai Network yet)
-bool game_supported() {
-    const frontend::KnownDump *d = frontend::find_dump(dump().program_id());
-    return d && std::strcmp(d->game, "yw3") == 0;
-}
-
 bool enabled() {
-    static const bool supported = game_supported();
-    if (!supported) return false;
     const auto &s = frontend::settings();
     const Account &a = account();
     // the account must be this server's, under the same key it was registered with
