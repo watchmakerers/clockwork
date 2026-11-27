@@ -1000,8 +1000,13 @@ void run(void (*start)(const char *dump), const char *cli_dump, bool force_launc
                     textures[i] = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STREAMING,
                                                     frame_width[i], frame_height[i]);
                     SDL_SetTextureScaleMode(textures[i], scale_mode());
-                    // the layout is in native-resolution units
-                    if (i == 0) layout.top_width = float(frame_width[0]) * SCREEN_HEIGHT / float(frame_height[0]), relayout();
+                }
+                // the layout is in native-resolution units. Checked on every frame: a GPU frame of
+                // another width may have changed it since this texture was made, and the picture
+                // would then be drawn stretched over that width
+                if (i == 0) {
+                    float logical = float(frame_width[0]) * SCREEN_HEIGHT / float(frame_height[0]);
+                    if (logical != layout.top_width) layout.top_width = logical, relayout();
                 }
                 SDL_UpdateTexture(textures[i], nullptr, frames[i].data(), frame_width[i] * 4);
                 frame_dirty[i] = false;
