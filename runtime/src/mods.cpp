@@ -38,7 +38,24 @@ void apply(Dump &dump, const std::string &game, uint64_t program_id) {
     for (const fs::path &mod : enabled)
         if (fs::is_directory(mod / "textures", ec)) textures.push_back(mod / "textures");
 
-    // include/ (and loose/): files inside archives, later mods winning
+    char id[17];
+    std::snprintf(id, sizeof id, "%016llx", (unsigned long long)program_id);
+    fs::path own = platform::data_dir() / "mods" / id; // this version's own folder
+    // in a romfs/ folder, a file that isn't in the game's RomFS names one inside an archive (how mods
+    // for the 3DS loading plugin are laid out)
+    auto inside_archives = [&](const fs::path &mod) {
+        std::vector<std::pair<std::string, fs::path>> out;
+        for (auto &e : fs::recursive_directory_iterator(mod / "romfs", ec)) {
+            if (!e.is_regular_file(ec)) continue;
+            std::string rel = fs::relative(e.path(), mod / "romfs", ec).generic_string();
+            if (!dump.romfs_file(rel)) out.push_back({rel, e.path()});
+        }
+        return out;
+    };
+    std::vector<fs::path> with_romfs = enabled;
+    with_romfs.push_back(own); // last, so it wins
+
+    // include/, loose/ and those: files inside archives, later mods winning
     std::map<std::string, std::pair<std::string, uint64_t>> inner; // archive path -> (host file, size)
     std::map<std::string, std::string> from;                       // archive path -> mod, for conflicts
     auto take = [&](const std::string &path, const fs::path &file, const fs::path &mod) {
@@ -51,6 +68,7 @@ void apply(Dump &dump, const std::string &game, uint64_t program_id) {
     bool any_inner = false;
     for (const fs::path &mod : enabled)
         any_inner |= fs::is_directory(mod / "include", ec) || fs::is_directory(mod / "loose", ec);
+    for (const fs::path &mod : with_romfs) any_inner |= !inside_archives(mod).empty();
     if (any_inner) {
         // the game's archives, and every path in them
         struct Archive {
@@ -104,6 +122,9 @@ void apply(Dump &dump, const std::string &game, uint64_t program_id) {
             }
         }
 
+        for (const fs::path &mod : with_romfs)
+            for (auto &[path, file] : inside_archives(mod)) take(path, file, mod);
+
         // every archive holding one of those files gets them (the language archives share paths)
         std::map<std::string, bool> found;
         for (const Archive &a : archives) {
@@ -126,9 +147,6 @@ void apply(Dump &dump, const std::string &game, uint64_t program_id) {
         }
 
     // one version's own romfs/ (a translation for that release), last
-    char id[17];
-    std::snprintf(id, sizeof id, "%016llx", (unsigned long long)program_id);
-    fs::path own = platform::data_dir() / "mods" / id;
     if (fs::is_directory(own / "romfs", ec)) {
         int n = dump.apply_romfs_mod(own / "romfs");
         LOG("mods: %d RomFS file%s replaced from %s", n, n == 1 ? "" : "s", (own / "romfs").string().c_str());

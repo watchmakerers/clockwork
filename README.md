@@ -47,7 +47,8 @@ Psychic Specters is the most played and tested; the others are newer here.
   at 60 by drawing an in-between frame for each one, at the cost of about two frames of delay.
 - **Mods**: install from GameBanana in the launcher, or drop them in yourself. They're applied as
   the game starts and never change the dump: whole RomFS files (LayeredFS-style translations) and
-  files inside Level-5's archives.
+  files inside Level-5's archives (in `include/`, or in `romfs/` under their path inside the
+  archive, as mods for the 3DS loading plugin have them). Code patches (`.ips`) aren't applied.
 - **HD textures** (GPU renderer): press F10 while playing to save each new texture the game uses to
   `dump/textures/<game>/` in the data folder, as `<hash>_<width>x<height>_f<format>.png`. Redraw any
   of them at a larger size (2x, 4x, any size works), keeping the file name, and put them in a mod's

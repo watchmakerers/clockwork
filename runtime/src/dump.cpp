@@ -366,7 +366,7 @@ int Dump::apply_romfs_mod(const std::filesystem::path &dir) {
         std::string rel = std::filesystem::relative(e.path(), dir, ec).generic_string();
         uint64_t size = e.file_size(ec);
         if (replace_romfs_file(rel, {level5::Piece{size, {}, ~0ull, e.path().string()}})) replaced++;
-        else if (skipped++ < 10) LOG("mods: %s isn't in the game's RomFS; adding files isn't supported", rel.c_str());
+        else if (skipped++ < 10) LOG("mods: %s isn't a RomFS file; looking for it inside the archives", rel.c_str());
     }
     return replaced;
 }
