@@ -24,6 +24,7 @@ void register_cecd();
 void register_uds();
 void register_frd();
 void register_offline();
+void register_soc();
 
 namespace {
 // a service the game asked for that has no implementation yet
@@ -55,6 +56,7 @@ void register_all() {
     register_uds();
     register_frd();
     register_offline();
+    register_soc();
 }
 } // namespace
 
@@ -91,6 +93,8 @@ std::shared_ptr<Service> get_service(const std::string &name) {
     }
     return inst;
 }
+
+uint32_t Request::static_buffer_size(uint32_t id) const { return mem::read32(ctx->tls + 0x180 + id * 8) >> 14; }
 
 void Request::push_static_buffer(Response &r, uint32_t id, const void *data, uint32_t size) {
     uint32_t dest = mem::read32(ctx->tls + 0x180 + id * 8 + 4);

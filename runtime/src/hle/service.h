@@ -4,6 +4,7 @@
 
 #include "kernel/kernel.h"
 
+#include <algorithm>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -43,6 +44,12 @@ struct Request {
     // Copies `size` bytes into the receive buffer the guest registered as static buffer `id`
     // (descriptor pairs at TLS + 0x180) and pushes the descriptor + address.
     void push_static_buffer(Response &r, uint32_t id, const void *data, uint32_t size);
+    // the size of the receive buffer the guest registered as static buffer `id`
+    uint32_t static_buffer_size(uint32_t id) const;
+    // push_static_buffer, cut to that size (for data from outside the game, like the network)
+    void push_static_buffer_clamped(Response &r, uint32_t id, const void *data, uint32_t size) {
+        push_static_buffer(r, id, data, std::min(size, static_buffer_size(id)));
+    }
 
     // normals includes the result code word
     Response reply(uint32_t normals, uint32_t translates, uint32_t result = kernel::RESULT_OK) {

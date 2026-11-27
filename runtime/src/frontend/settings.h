@@ -62,6 +62,9 @@ struct Settings {
     std::string player_name;  // shown to the others in the room
     std::string room, room_password;
 
+    // online play on Youmakai Network (the Online tab; see net/online.h)
+    bool online = false;            // games go online through Youmakai Network
+
     // European releases: the language the console is set to (3DS codes: 1 English, 2 French,
     // 3 German, 4 Italian, 5 Spanish), which the game is shown in
     int language = 1;

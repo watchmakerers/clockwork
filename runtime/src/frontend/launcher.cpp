@@ -10,6 +10,7 @@
 #include "games.h"
 #include "handoff.h"
 #include "log.h"
+#include "net/online.h"
 #include "net/relay.h"
 #include "platform.h"
 #include "saves.h"
@@ -1031,6 +1032,64 @@ void rooms_tab(const std::shared_ptr<RoomsState> &st, Settings &s, const char *c
          "Everyone needs the same game (versions that play together on a 3DS do here too).");
 }
 
+// The Online tab's state: registering runs on its own thread
+struct OnlineState {
+    std::mutex lock;
+    online::Account account = online::load_account();
+    bool registering = false;
+    std::string message;
+    bool failed = false;
+};
+
+// the Online tab: online play on Youmakai Network (net/online.h)
+void online_tab(const std::shared_ptr<OnlineState> &st, Settings &s) {
+    section("Online play");
+    ImGui::Checkbox("Play online on Youmakai Network", &s.online);
+    note("Yo-kai Watch 3 and Busters 2: online with everyone on Youmakai Network, 3DS consoles included. Other "
+         "games stay offline.");
+
+    std::lock_guard lk(st->lock);
+    section("Your account");
+    const online::Account &a = st->account;
+    bool here = a.usable();
+    if (here) {
+        ImGui::Text("Friend code %s", a.friend_code.c_str());
+        ImGui::TextDisabled("Principal id %u", a.pid);
+        if (ImGui::Button("Forget this account")) {
+            online::forget_account();
+            st->account = {};
+            st->message.clear();
+        }
+        note("Forgetting it can't be undone: the account stays on the server, but this PC can't log into it again.");
+    } else {
+        if (a.valid())
+            ImGui::TextColored(WARN, "Your saved account was made for an older server and can't be used. Register again.");
+        else ImGui::TextDisabled("No account yet.");
+        ImGui::BeginDisabled(st->registering);
+        if (ImGui::Button(st->registering ? "Registering..." : "Register")) {
+            st->registering = true;
+            st->message.clear();
+            std::thread([st] {
+                online::Account made;
+                std::string error;
+                bool ok = online::register_account(made, error);
+                std::lock_guard lk(st->lock);
+                st->registering = false;
+                st->failed = !ok;
+                if (ok) st->account = made, st->message = "Registered.";
+                else st->message = "Couldn't register: " + error;
+            }).detach();
+        }
+        ImGui::EndDisabled();
+        note("Clockwork has no 3DS console behind it, so it gets its own account on the server.");
+    }
+    if (!st->message.empty()) {
+        if (st->failed) ImGui::TextColored(WARN, "%s", st->message.c_str());
+        else ImGui::TextColored(BLUE, "%s", st->message.c_str());
+    }
+    if (s.online && !here) ImGui::TextColored(WARN, "Games stay offline until you have an account.");
+}
+
 } // namespace
 
 bool run_launcher(SDL_Window *window, SDL_Renderer *renderer, const std::string &gpu) {
@@ -1078,14 +1137,15 @@ bool run_launcher(SDL_Window *window, SDL_Renderer *renderer, const std::string 
     int top_tab = 0, settings_tab = 0; // the page shown
     uint64_t frame_count = 0;
     // top tabs, and the Settings tab's own
-    static const char *TABS[] = {"Library", "Mods", "Rooms", "Settings"};
+    static const char *TABS[] = {"Library", "Mods", "Rooms", "Online", "Settings"};
     static const char *SETTINGS_TABS[] = {"Display", "Controls", "Audio", "Updates"};
     // screenshot pages: each top tab, and each settings tab
-    static const char *SHOT_NAMES[] = {"Library", "Mods", "Rooms", "Display", "Controls", "Audio", "Updates"};
-    static const int SHOT_TOP[] = {0, 1, 2, 3, 3, 3, 3}, SHOT_SUB[] = {-1, -1, -1, 0, 1, 2, 3};
+    static const char *SHOT_NAMES[] = {"Library", "Mods", "Rooms", "Online", "Display", "Controls", "Audio", "Updates"};
+    static const int SHOT_TOP[] = {0, 1, 2, 3, 4, 4, 4, 4}, SHOT_SUB[] = {-1, -1, -1, -1, 0, 1, 2, 3};
     auto mods_state = std::make_shared<ModsState>();
     std::vector<InstalledMod> installed;
     auto rooms_state = std::make_shared<RoomsState>();
+    auto online_state = std::make_shared<OnlineState>();
     // audio devices, for the Audio tab
     std::vector<std::string> audio_devices;
     {
@@ -1314,10 +1374,10 @@ bool run_launcher(SDL_Window *window, SDL_Renderer *renderer, const std::string 
             ImVec2 ts = display_size(title_size, "CLOCKWORK");
             outlined_text(dl, title_size, {x, p.y + (logo - ts.y) / 2}, col(WHITE), col(NAVY_DARK), "CLOCKWORK", display_font);
             float bh = logo * 0.6f, bw = ImGui::GetFontSize() * 6.4f, gap = style.ItemSpacing.x * 0.5f;
-            float right = p.x + ImGui::GetContentRegionAvail().x, row = bw * 4 + gap * 3;
+            float right = p.x + ImGui::GetContentRegionAvail().x, row = bw * 5 + gap * 4;
             bool beside = right - row >= x + ts.x + gap * 4;
             float tx = beside ? right - row : p.x, ty = beside ? p.y + (logo - bh) / 2 : p.y + logo + style.ItemSpacing.y;
-            for (int i = 0; i < 4; i++) {
+            for (int i = 0; i < int(std::size(TABS)); i++) {
                 ImGui::SetCursorScreenPos({tx + float(i) * (bw + gap), ty});
                 if (bar_button(TABS[i], {bw, bh}, top_tab == i ? GOLD_BAR : LILAC_BAR)) top_tab = i;
             }
@@ -1485,6 +1545,9 @@ bool run_launcher(SDL_Window *window, SDL_Renderer *renderer, const std::string 
                 rooms_tab(rooms_state, s, dump_route.dump ? dump_route.dump->game : "");
             }
             if (tab(3)) {
+                online_tab(online_state, s);
+            }
+            if (tab(4)) {
             { // the settings' own pages
                 float sbh = ImGui::GetFrameHeight() * 1.2f, sbw = ImGui::GetFontSize() * 6.4f;
                 for (int i = 0; i < int(std::size(SETTINGS_TABS)); i++) {

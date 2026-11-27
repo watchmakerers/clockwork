@@ -64,6 +64,11 @@ Psychic Specters is the most played and tested; the others are newer here.
   tab. The relay server lives in its own repository,
   [clockwork-relay](https://github.com/clockwork-recompdev/clockwork-relay), with a one-command install
   for a Linux server.
+- **Online (Youmakai Network)**: Yo-kai Watch 3 and Busters 2 online through Youmakai Network, with
+  players on 3DS consoles; the other games stay offline for now. On the Online tab, press Register and turn
+  online play on, and Clockwork gets its own account and friend code. It is the only online server
+  Clockwork connects to. Work in progress: see
+  [docs/PLAN.md](docs/PLAN.md) (Phase 5c).
 
 ## Getting your dumps
 

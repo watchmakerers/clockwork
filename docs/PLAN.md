@@ -12,6 +12,7 @@ Design rules (native code only, no interpreter/JIT, Windows/macOS/Linux) are in
 | 4. Audio & input | Native audio (no DSP emulation); touch → mouse; controller support | Playable |
 | 5. Enhancements | Resolution scaling, widescreen, framerate, mod loading | |
 | 5b. Rooms | Local wireless play (nwm::UDS: battles, trades, co-op) over the internet, through rooms on a relay server. See below | Two players in one room battle as if side by side |
+| 5c. Youmakai Network | Online play on Youmakai Network, with 3DS consoles. See below | A Clockwork player matches with a 3DS in Yo-kai Watch 3 |
 | 6. Nintendo Switch | Clockwork itself running on a (homebrew) Switch: the same recompiled games, built for AArch64 with devkitPro/libnx. See below | A game playable in handheld mode, the touch screen as the 3DS bottom screen |
 
 ## Phase 5b: Rooms (local wireless over the internet)
@@ -20,7 +21,7 @@ Every game here uses local wireless (`nwm::UDS`) for battles, trades and co-op. 
 system raw frames for "nearby" consoles; Clockwork carries them to the other players in a room,
 so the game believes they're nearby. (Citra and Azahar do the same with their multiplayer rooms;
 their code is GPL, so we follow the behavior, not the code.) Nintendo Network online modes are
-out of scope: those servers are gone and reviving them is per-game server work.
+Phase 5c.
 
 1. **Learn the calls**: `runtime/src/hle/uds.cpp` answers safely (nobody nearby) and logs every
    command; each game's local-play menus are traced to see what it uses. Before this, opening local
@@ -38,6 +39,33 @@ out of scope: those servers are gone and reviving them is per-game server work.
 Open questions: which commands each game uses (step 1); whether beacon data encryption matters
 when both ends are Clockwork (likely not: we produce and decrypt our own); latency tolerance of
 each game's battle protocol over the internet.
+
+## Phase 5c: Youmakai Network (online, with consoles)
+
+Nintendo's servers are gone; Youmakai Network (`ykw3-stack`, with game servers for Yo-kai Watch 3
+and Blasters 2) replaces them, and is the only online server Clockwork connects to. The game's own
+NEX (server) and PIA (player to player) libraries are part of its recompiled code, so Clockwork
+only replaces the system services under them; then it plays with 3DS consoles on the same server,
+through the same protocol.
+
+| Service | What it does here |
+|---|---|
+| `ac:u` | Connected while online play is on |
+| `soc:U` | BSD sockets on the PC's network (`hle/soc.cpp`); NAT check hosts rewritten to Youmakai Network's |
+| `frd:u` | The account's principal id, friend code and NEX password; `RequestGameAuthentication` does the NASC login (`net/online.cpp`) |
+
+Identity: a 3DS proves itself to NASC with its console certificate, which Clockwork doesn't
+have. A Clockwork account is registered on the server's NASC front (`gate`) with its register
+key and logs in with a secret instead (`clockwork=` in the NASC request); it reaches only the
+games that server hosts.
+
+1. **Yo-kai Watch 3 on Youmakai**: NASC login, NEX login, matchmaking, a battle with a 3DS. Not
+   yet tested in-game.
+2. **Busters 2** (Blasters 2): on, the server hosts it. Not yet tested in-game.
+
+Open questions: frd and soc commands only seen in-game (each first call is logged: `frd:`,
+`soc:`); the size of `GetGameAuthenticationData`'s answer (logged); whether PIA's NAT traversal
+needs more than sockets (`frd:u` `DetectNatProperties`).
 
 ## Phase 6: Clockwork on Nintendo Switch
 
